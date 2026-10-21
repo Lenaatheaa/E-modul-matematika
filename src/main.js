@@ -27,7 +27,7 @@ const MENU_ITEMS = [
     icon: '🎯',
     iconClass: 'btn-icon-3',
     title: 'Tujuan Pembelajaran & Peta Konsep',
-    url: 'https://read.bookcreator.com/1vfFuGvvNbf6dY51XbqRgJty0Nh2/o3CHlXb9QjK1RQ6jYEHDLg/rYSX0kysQU6mPG_zQRBePw',
+    url: 'https://read.bookcreator.com/1vfFuGvvNbf6dY51XbqRgJty0Nh2/o3CHlXb9QjK1RQ6jYEHDLg/xg9L1FAOSNO0BkWtFrBwaQ',
   },
   {
     id: 'kegiatan',
