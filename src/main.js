@@ -45,7 +45,61 @@ const MENU_ITEMS = [
     title: 'Latihan dan Evaluasi',
     url: 'https://read.bookcreator.com/1vfFuGvvNbf6dY51XbqRgJty0Nh2/o3CHlXb9QjK1RQ6jYEHDLg/vkP5QsmvQ3KSd70TX4O6Kw',
   },
+  {
+    id: 'jobsheet-2',
+    number: '06',
+    icon: '📊',
+    iconClass: 'btn-icon-6',
+    title: 'Jobsheet 2',
+    badge: 'Modul Baru',
+    badgeClass: 'badge-new',
+    url: 'https://read.bookcreator.com/1vfFuGvvNbf6dY51XbqRgJty0Nh2/o3CHlXb9QjK1RQ6jYEHDLg/B1HXiSYBSLWUFtfjz_jHiA-right',
+    lembarKerjaUrl: 'https://read.bookcreator.com/1vfFuGvvNbf6dY51XbqRgJty0Nh2/o3CHlXb9QjK1RQ6jYEHDLg/B1HXiSYBSLWUFtfjz_jHiA-right',
+  },
+  {
+    id: 'jobsheet-3',
+    number: '07',
+    icon: '📑',
+    iconClass: 'btn-icon-7',
+    title: 'Jobsheet 3',
+    badge: 'Segera Hadir',
+    badgeClass: 'badge-soon',
+    url: '',
+    lembarKerjaUrl: '',
+    isComingSoon: true,
+  },
 ];
+
+/* ─────────────────────────────────────────────
+   COMING SOON MODAL
+   ───────────────────────────────────────────── */
+
+function showComingSoonModal(title) {
+  const existing = document.getElementById('modal-overlay');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'modal-overlay';
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal-card">
+      <div class="modal-badge">⏳ Segera Hadir</div>
+      <h3 class="modal-title">${title}</h3>
+      <p class="modal-desc">
+        Materi pembelajaran untuk <strong>${title}</strong> saat ini sedang dipersiapkan dan tautan modul akan segera menyusul.
+      </p>
+      <button class="modal-btn" id="modal-close-btn">Tutup</button>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  const closeModal = () => modal.remove();
+  document.getElementById('modal-close-btn')?.addEventListener('click', closeModal);
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
+}
 
 /* ─────────────────────────────────────────────
    RENDER HOME PAGE
@@ -92,17 +146,19 @@ function renderHome() {
         ${MENU_ITEMS.map((item) => `
           <button
             id="btn-${item.id}"
-            class="nav-btn"
-            data-url="${item.url}"
-            data-title="${item.title}"
+            class="nav-btn ${item.isComingSoon ? 'nav-btn-soon' : ''}"
+            data-id="${item.id}"
             aria-label="Buka ${item.title}"
           >
             <div class="btn-icon ${item.iconClass}">${item.icon}</div>
             <div class="btn-content">
-              <div class="btn-number">Menu ${item.number}</div>
+              <div class="btn-header-row">
+                <div class="btn-number">Menu ${item.number}</div>
+                ${item.badge ? `<span class="btn-badge ${item.badgeClass}">${item.badge}</span>` : ''}
+              </div>
               <div class="btn-title">${item.title}</div>
             </div>
-            <div class="btn-arrow">›</div>
+            <div class="btn-arrow">${item.isComingSoon ? '⏳' : '›'}</div>
           </button>
         `).join('')}
       </nav>
@@ -116,9 +172,16 @@ function renderHome() {
   // Attach button events
   document.querySelectorAll('.nav-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
-      const url = btn.dataset.url;
-      const title = btn.dataset.title;
-      renderReader(url, title);
+      const id = btn.dataset.id;
+      const item = MENU_ITEMS.find((m) => m.id === id);
+      if (!item) return;
+
+      if (item.isComingSoon || !item.url) {
+        showComingSoonModal(item.title);
+        return;
+      }
+
+      renderReader(item);
     });
   });
 }
@@ -127,22 +190,49 @@ function renderHome() {
    RENDER READER (iframe viewer)
    ───────────────────────────────────────────── */
 
-function renderReader(url, title) {
+function renderReader(item, initialTab = 'materi') {
+  let activeTab = initialTab;
+  const currentUrl = (activeTab === 'lembar-kerja' && item.lembarKerjaUrl) ? item.lembarKerjaUrl : item.url;
+  const currentTitle = (activeTab === 'lembar-kerja' && item.lembarKerjaUrl) ? `${item.title} (Lembar Kerja)` : item.title;
+
   const app = document.getElementById('app');
   app.innerHTML = `
     <div class="reader-page">
       <div class="reader-topbar">
         <button class="reader-back-btn" id="reader-back-btn" aria-label="Kembali ke beranda">
-          ← Kembali
+          ← <span class="back-label">Kembali</span>
         </button>
+
         <div class="reader-title">
-          ${title} <span>| E-Modul Matematika Program Linear</span>
+          <span id="reader-title-label">${currentTitle}</span>
+          <span class="reader-subtitle">| E-Modul Matematika Program Linear</span>
         </div>
+
+        ${item.lembarKerjaUrl ? `
+          <div class="reader-nav-actions" role="group" aria-label="Pilihan tampilan jobsheet">
+            <button
+              class="reader-action-btn ${activeTab === 'materi' ? 'active' : ''}"
+              id="tab-btn-materi"
+              title="Buka Materi ${item.title}"
+            >
+              📖 <span class="tab-label">Materi</span>
+            </button>
+            <button
+              class="reader-action-btn reader-action-highlight ${activeTab === 'lembar-kerja' ? 'active' : ''}"
+              id="tab-btn-lk"
+              title="Buka Lembar Kerja ${item.title}"
+            >
+              📝 <span class="tab-label">Lembar Kerja</span>
+            </button>
+          </div>
+        ` : ''}
+
         <a
-          href="${url}"
+          href="${currentUrl}"
           target="_blank"
           rel="noopener noreferrer"
           class="reader-open-btn"
+          id="reader-open-btn"
           aria-label="Buka di tab baru"
         >
           <span class="open-label">Buka Baru</span> ↗
@@ -156,8 +246,8 @@ function renderReader(url, title) {
         </div>
         <iframe
           id="content-iframe"
-          src="${url}"
-          title="${title}"
+          src="${currentUrl}"
+          title="${currentTitle}"
           allow="fullscreen"
           loading="lazy"
         ></iframe>
@@ -165,16 +255,46 @@ function renderReader(url, title) {
     </div>
   `;
 
-  // Hide loader after iframe loads
   const iframe = document.getElementById('content-iframe');
   const loading = document.getElementById('reader-loading');
+  const openBtn = document.getElementById('reader-open-btn');
+  const titleLabel = document.getElementById('reader-title-label');
+  const tabMateri = document.getElementById('tab-btn-materi');
+  const tabLk = document.getElementById('tab-btn-lk');
 
-  iframe.addEventListener('load', () => {
+  const onIframeLoad = () => {
     loading.classList.add('hidden');
-  });
+  };
+  iframe.addEventListener('load', onIframeLoad);
 
-  // Fallback: hide loading after 8s in case iframe blocks load event
-  setTimeout(() => loading.classList.add('hidden'), 8000);
+  // Fallback: hide loading after 8s
+  let loadingTimeout = setTimeout(() => loading.classList.add('hidden'), 8000);
+
+  const switchTab = (tab) => {
+    if (activeTab === tab) return;
+    activeTab = tab;
+    clearTimeout(loadingTimeout);
+    loading.classList.remove('hidden');
+
+    if (activeTab === 'lembar-kerja') {
+      tabMateri?.classList.remove('active');
+      tabLk?.classList.add('active');
+      iframe.src = item.lembarKerjaUrl;
+      openBtn.href = item.lembarKerjaUrl;
+      titleLabel.textContent = `${item.title} (Lembar Kerja)`;
+    } else {
+      tabLk?.classList.remove('active');
+      tabMateri?.classList.add('active');
+      iframe.src = item.url;
+      openBtn.href = item.url;
+      titleLabel.textContent = item.title;
+    }
+
+    loadingTimeout = setTimeout(() => loading.classList.add('hidden'), 8000);
+  };
+
+  tabMateri?.addEventListener('click', () => switchTab('materi'));
+  tabLk?.addEventListener('click', () => switchTab('lembar-kerja'));
 
   // Back button
   document.getElementById('reader-back-btn').addEventListener('click', () => {
