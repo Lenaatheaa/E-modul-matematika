@@ -54,7 +54,8 @@ const MENU_ITEMS = [
     badge: 'Modul Baru',
     badgeClass: 'badge-new',
     url: 'https://read.bookcreator.com/1vfFuGvvNbf6dY51XbqRgJty0Nh2/o3CHlXb9QjK1RQ6jYEHDLg/B1HXiSYBSLWUFtfjz_jHiA-right',
-    lembarKerjaUrl: 'https://read.bookcreator.com/1vfFuGvvNbf6dY51XbqRgJty0Nh2/o3CHlXb9QjK1RQ6jYEHDLg/B1HXiSYBSLWUFtfjz_jHiA-right',
+    lembarKerjaUrl: 'https://docs.google.com/document/d/18cphdq-ko7HJ3qTWAbWaY2vqspdpoTDiT7-WiQrcmBM/edit?usp=sharing',
+    lembarKerjaLabel: 'Lembar Kerja',
   },
   {
     id: 'jobsheet-3',
@@ -66,9 +67,23 @@ const MENU_ITEMS = [
     badgeClass: 'badge-soon',
     url: '',
     lembarKerjaUrl: '',
+    lembarKerjaLabel: 'Lembar Kerja',
     isComingSoon: true,
   },
 ];
+
+/* ─────────────────────────────────────────────
+   HELPERS
+   ───────────────────────────────────────────── */
+
+function getEmbedUrl(url) {
+  if (!url) return '';
+  // Convert Google Docs /edit link to /preview for clean, reliable iframe embedding
+  if (url.includes('docs.google.com/document/d/')) {
+    return url.replace(/\/edit(\?.*)?$/, '/preview');
+  }
+  return url;
+}
 
 /* ─────────────────────────────────────────────
    COMING SOON MODAL
@@ -192,8 +207,10 @@ function renderHome() {
 
 function renderReader(item, initialTab = 'materi') {
   let activeTab = initialTab;
-  const currentUrl = (activeTab === 'lembar-kerja' && item.lembarKerjaUrl) ? item.lembarKerjaUrl : item.url;
-  const currentTitle = (activeTab === 'lembar-kerja' && item.lembarKerjaUrl) ? `${item.title} (Lembar Kerja)` : item.title;
+  const lkLabel = item.lembarKerjaLabel || 'Lembar Kerja';
+  const currentDirectUrl = (activeTab === 'lembar-kerja' && item.lembarKerjaUrl) ? item.lembarKerjaUrl : item.url;
+  const currentEmbedUrl = getEmbedUrl(currentDirectUrl);
+  const currentTitle = (activeTab === 'lembar-kerja' && item.lembarKerjaUrl) ? `${item.title} (${lkLabel})` : item.title;
 
   const app = document.getElementById('app');
   app.innerHTML = `
@@ -220,15 +237,15 @@ function renderReader(item, initialTab = 'materi') {
             <button
               class="reader-action-btn reader-action-highlight ${activeTab === 'lembar-kerja' ? 'active' : ''}"
               id="tab-btn-lk"
-              title="Buka Lembar Kerja ${item.title}"
+              title="Buka ${lkLabel} ${item.title}"
             >
-              📝 <span class="tab-label">Lembar Kerja</span>
+              📝 <span class="tab-label">${lkLabel}</span>
             </button>
           </div>
         ` : ''}
 
         <a
-          href="${currentUrl}"
+          href="${currentDirectUrl}"
           target="_blank"
           rel="noopener noreferrer"
           class="reader-open-btn"
@@ -246,7 +263,7 @@ function renderReader(item, initialTab = 'materi') {
         </div>
         <iframe
           id="content-iframe"
-          src="${currentUrl}"
+          src="${currentEmbedUrl}"
           title="${currentTitle}"
           allow="fullscreen"
           loading="lazy"
@@ -279,13 +296,13 @@ function renderReader(item, initialTab = 'materi') {
     if (activeTab === 'lembar-kerja') {
       tabMateri?.classList.remove('active');
       tabLk?.classList.add('active');
-      iframe.src = item.lembarKerjaUrl;
+      iframe.src = getEmbedUrl(item.lembarKerjaUrl);
       openBtn.href = item.lembarKerjaUrl;
-      titleLabel.textContent = `${item.title} (Lembar Kerja)`;
+      titleLabel.textContent = `${item.title} (${lkLabel})`;
     } else {
       tabLk?.classList.remove('active');
       tabMateri?.classList.add('active');
-      iframe.src = item.url;
+      iframe.src = getEmbedUrl(item.url);
       openBtn.href = item.url;
       titleLabel.textContent = item.title;
     }
