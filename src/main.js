@@ -54,8 +54,14 @@ const MENU_ITEMS = [
     badge: 'Modul Baru',
     badgeClass: 'badge-new',
     url: 'https://read.bookcreator.com/1vfFuGvvNbf6dY51XbqRgJty0Nh2/o3CHlXb9QjK1RQ6jYEHDLg/B1HXiSYBSLWUFtfjz_jHiA-right',
-    lembarKerjaUrl: 'https://docs.google.com/document/d/18cphdq-ko7HJ3qTWAbWaY2vqspdpoTDiT7-WiQrcmBM/edit?usp=sharing',
-    lembarKerjaLabel: 'Lembar Kerja',
+    worksheets: [
+      {
+        id: 'lk-jobsheet-2',
+        label: 'Lembar Kerja',
+        fullLabel: 'Lembar Kerja',
+        url: 'https://docs.google.com/document/d/130HD6jIYrSGz6JR6qIM87s0XeFSyiqhrikJEs47I2nc/edit?tab=t.0',
+      },
+    ],
   },
   {
     id: 'jobsheet-3',
@@ -63,12 +69,23 @@ const MENU_ITEMS = [
     icon: '📑',
     iconClass: 'btn-icon-7',
     title: 'Jobsheet 3',
-    badge: 'Segera Hadir',
-    badgeClass: 'badge-soon',
-    url: '',
-    lembarKerjaUrl: '',
-    lembarKerjaLabel: 'Lembar Kerja',
-    isComingSoon: true,
+    badge: 'Modul Baru',
+    badgeClass: 'badge-new',
+    url: 'https://read.bookcreator.com/1vfFuGvvNbf6dY51XbqRgJty0Nh2/o3CHlXb9QjK1RQ6jYEHDLg/30YIxv_iTUWfaXRb6w_cYg-right',
+    worksheets: [
+      {
+        id: 'lk-smart-home-battle',
+        label: 'LK Smart Home Battle',
+        fullLabel: 'Lembar Kerja Smart Home Battle',
+        url: 'https://docs.google.com/document/d/18cphdq-ko7HJ3qTWAbWaY2vqspdpoTDiT7-WiQrcmBM/edit?tab=t.0',
+      },
+      {
+        id: 'lk-stem-mini',
+        label: 'LK STEM Mini',
+        fullLabel: 'Lembar Kerja STEM Mini',
+        url: 'https://docs.google.com/document/d/1G3_SuD6wTiiAsr5uQugdml_ziqwhM6e8IreExibS7xA/edit?tab=t.0',
+      },
+    ],
   },
 ];
 
@@ -83,6 +100,21 @@ function getEmbedUrl(url) {
     return url.replace(/\/edit(\?.*)?$/, '/preview');
   }
   return url;
+}
+
+function getWorksheets(item) {
+  if (item.worksheets && item.worksheets.length > 0) {
+    return item.worksheets;
+  }
+  if (item.lembarKerjaUrl) {
+    return [{
+      id: 'lk-default',
+      label: item.lembarKerjaLabel || 'Lembar Kerja',
+      fullLabel: item.lembarKerjaLabel || 'Lembar Kerja',
+      url: item.lembarKerjaUrl,
+    }];
+  }
+  return [];
 }
 
 /* ─────────────────────────────────────────────
@@ -206,11 +238,33 @@ function renderHome() {
    ───────────────────────────────────────────── */
 
 function renderReader(item, initialTab = 'materi') {
-  let activeTab = initialTab;
-  const lkLabel = item.lembarKerjaLabel || 'Lembar Kerja';
-  const currentDirectUrl = (activeTab === 'lembar-kerja' && item.lembarKerjaUrl) ? item.lembarKerjaUrl : item.url;
-  const currentEmbedUrl = getEmbedUrl(currentDirectUrl);
-  const currentTitle = (activeTab === 'lembar-kerja' && item.lembarKerjaUrl) ? `${item.title} (${lkLabel})` : item.title;
+  const worksheets = getWorksheets(item);
+  let activeTabId = initialTab;
+
+  const getActiveInfo = (tabId) => {
+    if (tabId === 'materi') {
+      return {
+        directUrl: item.url,
+        embedUrl: getEmbedUrl(item.url),
+        title: item.title,
+      };
+    }
+    const ws = worksheets.find((w) => w.id === tabId) || worksheets[0];
+    if (ws) {
+      return {
+        directUrl: ws.url,
+        embedUrl: getEmbedUrl(ws.url),
+        title: `${item.title} (${ws.fullLabel || ws.label})`,
+      };
+    }
+    return {
+      directUrl: item.url,
+      embedUrl: getEmbedUrl(item.url),
+      title: item.title,
+    };
+  };
+
+  const initialInfo = getActiveInfo(activeTabId);
 
   const app = document.getElementById('app');
   app.innerHTML = `
@@ -221,31 +275,33 @@ function renderReader(item, initialTab = 'materi') {
         </button>
 
         <div class="reader-title">
-          <span id="reader-title-label">${currentTitle}</span>
+          <span id="reader-title-label">${initialInfo.title}</span>
           <span class="reader-subtitle">| E-Modul Matematika Program Linear</span>
         </div>
 
-        ${item.lembarKerjaUrl ? `
-          <div class="reader-nav-actions" role="group" aria-label="Pilihan tampilan jobsheet">
+        ${worksheets.length > 0 ? `
+          <div class="reader-nav-actions" role="group" aria-label="Pilihan materi dan lembar kerja">
             <button
-              class="reader-action-btn ${activeTab === 'materi' ? 'active' : ''}"
-              id="tab-btn-materi"
+              class="reader-action-btn ${activeTabId === 'materi' ? 'active' : ''}"
+              data-tab="materi"
               title="Buka Materi ${item.title}"
             >
               📖 <span class="tab-label">Materi</span>
             </button>
-            <button
-              class="reader-action-btn reader-action-highlight ${activeTab === 'lembar-kerja' ? 'active' : ''}"
-              id="tab-btn-lk"
-              title="Buka ${lkLabel} ${item.title}"
-            >
-              📝 <span class="tab-label">${lkLabel}</span>
-            </button>
+            ${worksheets.map((ws) => `
+              <button
+                class="reader-action-btn reader-action-highlight ${activeTabId === ws.id ? 'active' : ''}"
+                data-tab="${ws.id}"
+                title="Buka ${ws.fullLabel || ws.label}"
+              >
+                📝 <span class="tab-label">${ws.label}</span>
+              </button>
+            `).join('')}
           </div>
         ` : ''}
 
         <a
-          href="${currentDirectUrl}"
+          href="${initialInfo.directUrl}"
           target="_blank"
           rel="noopener noreferrer"
           class="reader-open-btn"
@@ -263,8 +319,8 @@ function renderReader(item, initialTab = 'materi') {
         </div>
         <iframe
           id="content-iframe"
-          src="${currentEmbedUrl}"
-          title="${currentTitle}"
+          src="${initialInfo.embedUrl}"
+          title="${initialInfo.title}"
           allow="fullscreen"
           loading="lazy"
         ></iframe>
@@ -276,8 +332,6 @@ function renderReader(item, initialTab = 'materi') {
   const loading = document.getElementById('reader-loading');
   const openBtn = document.getElementById('reader-open-btn');
   const titleLabel = document.getElementById('reader-title-label');
-  const tabMateri = document.getElementById('tab-btn-materi');
-  const tabLk = document.getElementById('tab-btn-lk');
 
   const onIframeLoad = () => {
     loading.classList.add('hidden');
@@ -287,31 +341,34 @@ function renderReader(item, initialTab = 'materi') {
   // Fallback: hide loading after 8s
   let loadingTimeout = setTimeout(() => loading.classList.add('hidden'), 8000);
 
-  const switchTab = (tab) => {
-    if (activeTab === tab) return;
-    activeTab = tab;
+  const switchTab = (tabId) => {
+    if (activeTabId === tabId) return;
+    activeTabId = tabId;
     clearTimeout(loadingTimeout);
     loading.classList.remove('hidden');
 
-    if (activeTab === 'lembar-kerja') {
-      tabMateri?.classList.remove('active');
-      tabLk?.classList.add('active');
-      iframe.src = getEmbedUrl(item.lembarKerjaUrl);
-      openBtn.href = item.lembarKerjaUrl;
-      titleLabel.textContent = `${item.title} (${lkLabel})`;
-    } else {
-      tabLk?.classList.remove('active');
-      tabMateri?.classList.add('active');
-      iframe.src = getEmbedUrl(item.url);
-      openBtn.href = item.url;
-      titleLabel.textContent = item.title;
-    }
+    const info = getActiveInfo(activeTabId);
+
+    document.querySelectorAll('.reader-action-btn').forEach((btn) => {
+      if (btn.dataset.tab === activeTabId) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+
+    iframe.src = info.embedUrl;
+    openBtn.href = info.directUrl;
+    titleLabel.textContent = info.title;
 
     loadingTimeout = setTimeout(() => loading.classList.add('hidden'), 8000);
   };
 
-  tabMateri?.addEventListener('click', () => switchTab('materi'));
-  tabLk?.addEventListener('click', () => switchTab('lembar-kerja'));
+  document.querySelectorAll('.reader-action-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      switchTab(btn.dataset.tab);
+    });
+  });
 
   // Back button
   document.getElementById('reader-back-btn').addEventListener('click', () => {

@@ -428,6 +428,12 @@ body::before {
   border-radius: 12px;
   border: 1px solid var(--white-20);
   flex-shrink: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.reader-nav-actions::-webkit-scrollbar {
+  display: none;
 }
 
 .reader-action-btn {
